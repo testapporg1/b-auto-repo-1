@@ -1,7 +1,7 @@
-# Complete List of Bridge Arguments:
-#     https://documentation.blackduck.com/bundle/bridge/page/documentation/c_complete-list-of-bridge-commands.html
 # Quickstart: Bridge CLI with polaris:
 #     https://documentation.blackduck.com/bundle/bridge/page/documentation/t_github-polaris-cli-quickstart.html
+# Complete List of Bridge Arguments:
+#     https://documentation.blackduck.com/bundle/bridge/page/documentation/c_complete-list-of-bridge-commands.html
 name: Polaris Bridge CLI Scan
 on:
   push:
@@ -23,9 +23,10 @@ on:
 permissions:
   contents: read                # Required for basic workflow operations
   pull-requests: write          # Required to add comments or create fix pull requests
+  security-events: write        # Required to upload SARIF results to GitHub Security
 jobs:
   polaris:
-    runs-on: self-hosted
+    runs-on: windows-latest
     env:
       BRIDGE_POLARIS_SERVERURL: ${{ vars.POLARIS_URL }}
       BRIDGE_POLARIS_ACCESSTOKEN: ${{ secrets.POLARIS_ACCESS_TOKEN }}
@@ -33,38 +34,30 @@ jobs:
       BRIDGE_POLARIS_APPLICATION_NAME: ${{ github.event.repository.name }}
       BRIDGE_POLARIS_PROJECT_NAME: ${{ github.event.repository.name }}
       BRIDGE_POLARIS_BRANCH_NAME: ${{ github.event.ref_name }}
+      BRIDGE_POLARIS_REPORTS_SARIF_CREATE: "true"
+      BRIDGE_POLARIS_UPLOAD_SARIF_REPORT: "true"
       BRIDGE_GITHUB_USER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       ### SCAN CONFIGURATION: Uncomment below to enable
       # BRIDGE_POLARIS_WAITFORSCAN: true # Wait for scan completion before proceeding
-
-      ### SARIF report generation and upload to GitHub Advanced Security: Uncomment below to enable
-      # BRIDGE_POLARIS_REPORTS_SARIF_CREATE: false # Create SARIF report and upload it as artifact
-      # BRIDGE_POLARIS_UPLOAD_SARIF_REPORT: false
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
-      # - name: Download & Setup Bridge CLI
-      #   run: |-
-      #     BRIDGE_CLI_DOWNLOAD_URL="https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/bridge/binaries/bridge-cli-bundle/latest"
-      #     if [[ "$RUNNER_OS" == "Windows" ]]; then
-      #       pwsh -Command "Invoke-WebRequest $BRIDGE_CLI_DOWNLOAD_URL/bridge-cli-bundle-win64.zip -OutFile bridge.zip; Expand-Archive bridge.zip $env:RUNNER_TEMP; 
-      #       echo BRIDGE_CLI_INSTALL_DIR=$(Get-ChildItem -Recurse $env:RUNNER_TEMP -Filter bridge-cli.exe | Select-Object -First 1) | Out-File $env:GITHUB_ENV -Append"
-      #     else
-      #       OS=$( [[ "$RUNNER_OS" == "macOS" ]] && ([[ $(uname -m) =~ arm ]] && echo macos_arm || echo macosx) || ([[ $(uname -m) =~ arm ]] && echo linux_arm || echo linux64 ))
-      #       curl -sSL -o bridge.zip $BRIDGE_CLI_DOWNLOAD_URL/bridge-cli-bundle-$OS.zip && unzip -qo bridge.zip -d $RUNNER_TEMP
-      #       echo BRIDGE_CLI_INSTALL_DIR=$(find $RUNNER_TEMP -name bridge-cli | head -n1) >> $GITHUB_ENV
-      #     fi
       - name: Download & Setup Bridge CLI
-        run: |
+        run: |-
           BRIDGE_CLI_DOWNLOAD_URL="https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/bridge/binaries/bridge-cli-bundle/latest"
           if [[ "$RUNNER_OS" == "Windows" ]]; then
-            pwsh -Command "Invoke-WebRequest $BRIDGE_CLI_DOWNLOAD_URL/bridge-cli-bundle-win64.zip -OutFile bridge.zip; Expand-Archive bridge.zip $env:RUNNER_TEMP;
-            echo BRIDGE_CLI_INSTALL_DIR=$(Get-ChildItem -Recurse $env:RUNNER_TEMP -Filter bridge-cli.exe | Select-Object -First 1) | Out-File $env:GITHUB_ENV -Append"
+            pwsh -Command "
+              Invoke-WebRequest $env:BRIDGE_CLI_DOWNLOAD_URL/bridge-cli-bundle-win64.zip -OutFile bridge.zip;
+              Expand-Archive bridge.zip $env:RUNNER_TEMP;
+              \$exe = (Get-ChildItem -Recurse -File $env:RUNNER_TEMP -Filter bridge-cli.exe | Select-Object -First 1).FullName;
+              echo BRIDGE_CLI_INSTALL_DIR=\$exe | Out-File -Append -FilePath $env:GITHUB_ENV;
+            "
           else
             OS=$([[ "$RUNNER_OS" == "macOS" ]] && ([[ $(uname -m) =~ arm ]] && echo macos_arm || echo macosx) || ([[ $(uname -m) =~ arm ]] && echo linux_arm || echo linux64))
-            curl -sSL -o bridge.zip $BRIDGE_CLI_DOWNLOAD_URL/bridge-cli-bundle-$OS.zip && unzip -qo bridge.zip -d $RUNNER_TEMP
-            echo BRIDGE_CLI_INSTALL_DIR=$(find $RUNNER_TEMP -type f -name bridge-cli | head -n1) >> $GITHUB_ENV
+            curl -sSL -o bridge.zip "$BRIDGE_CLI_DOWNLOAD_URL/bridge-cli-bundle-$OS.zip"
+            unzip -qo bridge.zip -d "$RUNNER_TEMP"
+            echo "BRIDGE_CLI_INSTALL_DIR=$(find $RUNNER_TEMP -type f -name bridge-cli | head -n1)" >> "$GITHUB_ENV"
           fi
       - name: Polaris Full Scan
         if: ${{ github.event_name != 'pull_request' }}
