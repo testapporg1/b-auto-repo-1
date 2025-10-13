@@ -27,11 +27,11 @@ jobs:
   coverity:
     runs-on: ubuntu-latest
     env:
-      BRIDGE_COVERITY_URL: ${{ vars.COVERITY_URL }}
-      BRIDGE_COVERITY_USER: ${{ secrets.COVERITY_USER }}
-      BRIDGE_COVERITY_PASSPHRASE: ${{ secrets.COVERITY_PASSPHRASE }}
-      BRIDGE_COVERITY_PROJECT_NAME: ${{ github.event.repository.name }}
-      BRIDGE_COVERITY_STREAM_NAME: ${{ github.event.ref_name }}
+      BRIDGE_COVERITY_CONNECT_URL: ${{ vars.COVERITY_URL }}
+      BRIDGE_COVERITY_CONNECT_USER_NAME: ${{ secrets.COVERITY_USER }}
+      BRIDGE_COVERITY_CONNECT_USER_PASSWORD: ${{ secrets.COVERITY_PASSPHRASE }}
+      BRIDGE_COVERITY_CONNECT_PROJECT_NAME: ${{ github.event.repository.name }}
+      BRIDGE_COVERITY_CONNECT_STREAM_NAME: ${{ github.event.ref_name }}
       BRIDGE_COVERITY_LOCAL: "true"
       BRIDGE_GITHUB_USER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
@@ -60,7 +60,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         run: |-
           ${{ env.BRIDGE_CLI_INSTALL_DIR }} --stage coverity --verbose  --diagnostics  \
-             coverity.prComment.enable=true  \
+             coverity.prcomment.enabled=true  \
              github.repository.branch.name=${{ github.ref_name }}  \
              github.repository.name=${{ github.event.repository.name }}  \
              github.repository.owner.name=${{ github.repository_owner }}  \
