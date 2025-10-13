@@ -44,6 +44,7 @@ jobs:
       - name: Checkout Source
         uses: actions/checkout@v4
       - name: Download & Setup Bridge CLI
+        shell: bash
         run: |-
           BRIDGE_CLI_DOWNLOAD_URL="https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/bridge/binaries/bridge-cli-bundle/latest"
           if [[ "$RUNNER_OS" == "Windows" ]]; then
