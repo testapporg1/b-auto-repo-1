@@ -25,7 +25,7 @@ permissions:
   pull-requests: write          # Required to add comments or create fix pull requests
 jobs:
   blackducksca:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     env:
       BRIDGE_BLACKDUCKSCA_URL: ${{ vars.BLACKDUCKSCA_URL }}
       BRIDGE_BLACKDUCKSCA_TOKEN: ${{ secrets.BLACKDUCKSCA_TOKEN }}
