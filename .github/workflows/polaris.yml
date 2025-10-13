@@ -16,7 +16,7 @@ jobs:
   polaris:
     runs-on: windows-latest
     env:
-      BRIDGE_POLARIS_SERVERURL: ${{ vars.POLARIS_URL }}
+      BRIDGE_POLARIS_SERVERURL: https://poc.polaris.blackduck.com/
       BRIDGE_POLARIS_ACCESSTOKEN: ${{ secrets.POLARIS_ACCESS_TOKEN }}
       BRIDGE_POLARIS_ASSESSMENT_TYPES: SAST,SCA
       BRIDGE_POLARIS_APPLICATION_NAME: ${{ github.event.repository.name }}
@@ -25,10 +25,16 @@ jobs:
       BRIDGE_POLARIS_REPORTS_SARIF_CREATE: true
       BRIDGE_POLARIS_REPORTS_SARIF_UPLOAD: true
       BRIDGE_POLARIS_WAITFORSCAN: true
+      BRIDGE_POLARIS_ONBOARDING: false
       BRIDGE_GITHUB_USER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
+
+      - name: Debug: List Source Files
+        shell: pwsh
+        run: Get-ChildItem -Recurse
 
       - name: Download & Setup Bridge CLI
         shell: pwsh
