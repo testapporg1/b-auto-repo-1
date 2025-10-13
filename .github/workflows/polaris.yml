@@ -64,8 +64,11 @@ jobs:
           echo "🔍 Running Full Scan on $RUNNER_OS for branch: $GITHUB_REF_NAME"
 
           if [[ "$RUNNER_OS" == "Windows" ]]; then
+            echo "Bridge CLI path on Windows: $env:BRIDGE_CLI_INSTALL_DIR"
             pwsh -Command "& \"$env:BRIDGE_CLI_INSTALL_DIR\" --stage polaris --diagnostics"
           else
+            echo "Bridge CLI path on Linux/macOS: $BRIDGE_CLI_INSTALL_DIR"
+            chmod +x "$BRIDGE_CLI_INSTALL_DIR"
             "$BRIDGE_CLI_INSTALL_DIR" --stage polaris --diagnostics
           fi
 
@@ -85,6 +88,7 @@ jobs:
               github.repository.owner.name='${{ github.repository_owner }}' `
               github.repository.pull.number='${{ github.event.number }}'"
           else
+            chmod +x "$BRIDGE_CLI_INSTALL_DIR"
             "$BRIDGE_CLI_INSTALL_DIR" --stage polaris --diagnostics \
               polaris.prcomment.enabled=true \
               polaris.branch.parent.name="${{ github.event.base_ref }}" \
