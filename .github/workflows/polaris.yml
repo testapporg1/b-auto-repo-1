@@ -38,16 +38,15 @@ jobs:
         shell: bash
         run: |
           BRIDGE_CLI_DOWNLOAD_URL="https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/bridge/binaries/bridge-cli-bundle/latest"
-
+      
           if [[ "$RUNNER_OS" == "Windows" ]]; then
             pwsh -Command "
-              \$bridgeUrl = '$BRIDGE_CLI_DOWNLOAD_URL';
-              \$tempDir = \$env:RUNNER_TEMP;
-              \$envFile = \$env:GITHUB_ENV;
-              Invoke-WebRequest \"\$bridgeUrl/bridge-cli-bundle-win64.zip\" -OutFile 'bridge.zip';
-              Expand-Archive 'bridge.zip' \$tempDir -Force;
-              \$exe = (Get-ChildItem -Recurse -File \$tempDir -Filter bridge-cli.exe | Select-Object -First 1).FullName;
-              \"BRIDGE_CLI_INSTALL_DIR=\$exe\" | Out-File -Append -FilePath \$envFile;
+              \$tempDir = \$env:RUNNER_TEMP
+              \$bridgeUrl = '$BRIDGE_CLI_DOWNLOAD_URL'
+              Invoke-WebRequest \"\$bridgeUrl/bridge-cli-bundle-win64.zip\" -OutFile \"bridge.zip\"
+              Expand-Archive -Path bridge.zip -DestinationPath \$tempDir -Force
+              \$exe = (Get-ChildItem -Recurse -File \$tempDir -Filter bridge-cli.exe | Select-Object -First 1).FullName
+              Add-Content -Path \$env:GITHUB_ENV -Value \"BRIDGE_CLI_INSTALL_DIR=\$exe\"
             "
           else
             OS=$([[ "$RUNNER_OS" == "macOS" ]] && ([[ $(uname -m) =~ arm ]] && echo macos_arm || echo macosx) || ([[ $(uname -m) =~ arm ]] && echo linux_arm || echo linux64))
