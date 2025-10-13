@@ -55,11 +55,11 @@ jobs:
           fi
       - name: Coverity Full Scan
         if: ${{ github.event_name != 'pull_request' }}
-        run: ${{ env.BRIDGE_CLI_INSTALL_DIR }} --stage coverity --verbose --diagnostics
+        run: ${{ env.BRIDGE_CLI_INSTALL_DIR }} --stage connect --verbose --diagnostics
       - name: Coverity PR Scan
         if: ${{ github.event_name == 'pull_request' }}
         run: |-
-          ${{ env.BRIDGE_CLI_INSTALL_DIR }} --stage coverity --verbose  --diagnostics  \
+          ${{ env.BRIDGE_CLI_INSTALL_DIR }} --stage connect --verbose  --diagnostics  \
              coverity.prcomment.enabled=true  \
              github.repository.branch.name=${{ github.ref_name }}  \
              github.repository.name=${{ github.event.repository.name }}  \
