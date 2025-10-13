@@ -1,4 +1,8 @@
-name: Black Duck Security Scan
+# Complete List of Bridge Arguments:
+#     https://documentation.blackduck.com/bundle/bridge/page/documentation/c_complete-list-of-bridge-commands.html
+# Quickstart: Bridge CLI with blackducksca:
+#     https://documentation.blackduck.com/bundle/bridge/page/documentation/c_using-bridge-with-black-duck.html
+name: Black Duck Bridge CLI Scan
 on:
   push:
     branches:
@@ -15,22 +19,53 @@ on:
       - stage
       - release
   workflow_dispatch: {}
+# GitHub token permissions for post-scan actions. Required for built-in GITHUB_TOKEN; if using a PAT with equivalent scopes, permissions block can be commented out.
+permissions:
+  contents: write               # Required to push changes or create fix branches
+  pull-requests: write          # Required to add comments or create fix pull requests
 jobs:
   blackducksca:
     runs-on: ubuntu-latest
+    env:
+      BRIDGE_BLACKDUCKSCA_URL: ${{ vars.BLACKDUCKSCA_URL }}
+      BRIDGE_BLACKDUCKSCA_TOKEN: ${{ secrets.BLACKDUCKSCA_TOKEN }}
+      BRIDGE_BLACKDUCKSCA_PROJECT_NAME: ${{ github.event.repository.name }}
+      BRIDGE_BLACKDUCKSCA_PROJECT_VERSION: ${{ github.event.ref_name }}
+      BRIDGE_BLACKDUCKSCA_FIXPR_ENABLED: "true"
+      BRIDGE_GITHUB_USER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      ### SCAN CONFIGURATION: Uncomment below to enable
+      # BRIDGE_BLACKDUCKSCA_WAITFORSCAN: true # Wait for scan completion before proceeding
+
+      ### SARIF report generation and upload to GitHub Advanced Security: Uncomment below to enable
+      # BRIDGE_BLACKDUCKSCA_REPORTS_SARIF_CREATE: false # Create SARIF report and upload it as artifact
+      # BRIDGE_BLACKDUCKSCA_REPORTS_SARIF_UPLOAD: false # Upload SARIF report in GitHub Advanced Security tab
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
-      - name: Black Duck Security Scan
-        id: black-duck-security-scan
-        uses: blackduck-inc/black-duck-security-scan@v2
-        with:
-          blackducksca_url: ${{ vars.BLACKDUCKSCA_URL }}
-          blackducksca_token: ${{ secrets.BLACKDUCKSCA_TOKEN }}
-          blackducksca_waitForScan: true
-          mark_build_status: failure
-          include_diagnostics: false
-          blackducksca_prComment_enabled: false
-          blackducksca_fixpr_enabled: false
-          blackducksca_reports_sarif_create: false
-          blackducksca_upload_sarif_report: false
+      - name: Download & Setup Bridge CLI
+        run: |-
+          BRIDGE_CLI_DOWNLOAD_URL="https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/bridge/binaries/bridge-cli-bundle/latest"
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            pwsh -Command "Invoke-WebRequest $BRIDGE_CLI_DOWNLOAD_URL/bridge-cli-bundle-win64.zip -OutFile bridge.zip; Expand-Archive bridge.zip $env:RUNNER_TEMP; 
+            echo BRIDGE_CLI_INSTALL_DIR=$(Get-ChildItem -Recurse $env:RUNNER_TEMP -Filter bridge-cli.exe | Select-Object -First 1) | Out-File $env:GITHUB_ENV -Append"
+          else
+            OS=$( [[ "$RUNNER_OS" == "macOS" ]] && ([[ $(uname -m) =~ arm ]] && echo macos_arm || echo macosx) || ([[ $(uname -m) =~ arm ]] && echo linux_arm || echo linux64 ))
+            curl -sSL -o bridge.zip $BRIDGE_CLI_DOWNLOAD_URL/bridge-cli-bundle-$OS.zip && unzip -qo bridge.zip -d $RUNNER_TEMP
+            echo BRIDGE_CLI_INSTALL_DIR=$(find $RUNNER_TEMP -name bridge-cli | head -n1) >> $GITHUB_ENV
+          fi
+      - name: Blackducksca Full Scan
+        if: ${{ github.event_name != 'pull_request' }}
+        run: ${{ env.BRIDGE_CLI_INSTALL_DIR }} --stage blackducksca
+      - name: Blackducksca PR Scan
+        if: ${{ github.event_name == 'pull_request' }}
+        run: ${{ env.BRIDGE_CLI_INSTALL_DIR }} --stage blackducksca
+
+
+      ### Uncomment below configuration to save logs
+      # - name: Save Logs
+      #   if: always()
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: bridge-logs
+      #     path: ${{ github.workspace }}/.bridge
