@@ -1,0 +1,36 @@
+name: Self-Hosted SARIF Upload Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  upload-sarif:
+    runs-on: self-hosted
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Print workspace location
+      run: |
+        echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
+        echo "Current directory:"
+        pwd
+
+    - name: Simulate SARIF file creation
+      run: |
+        mkdir -p ".bridge/Dynamic Folder With Spaces"
+        echo '{"version": "2.1.0", "runs": []}' > ".bridge/Dynamic Folder With Spaces/report.sarif.json"
+        echo "SARIF file created at:"
+        ls -l ".bridge/Dynamic Folder With Spaces"
+
+    - name: List all SARIF files
+      run: |
+        echo "Searching for SARIF files..."
+        find .bridge -type f -name "*.sarif*" -print
+
+    - name: Upload SARIF Files
+      uses: actions/upload-artifact@v4
+      with:
+        name: polaris-sarif-results
+        path: ".bridge/**/**/*.sarif*"
