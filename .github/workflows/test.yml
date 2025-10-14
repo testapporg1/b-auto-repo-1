@@ -33,4 +33,5 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: polaris-sarif-results
-        path: ".bridge/**/**/*.sarif*"
+        path: ".bridge/**/*.sarif*"
+
