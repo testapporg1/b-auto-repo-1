@@ -65,7 +65,7 @@ jobs:
         if: ${{ github.event_name == 'pull_request' }}
         run: |-
           ${{ env.BRIDGE_CLI_INSTALL_DIR }} --stage connect --verbose  --diagnostics  \
-             coverity.prComment.enable=true  \
+             coverity.automation.prcomment=true  \
              github.repository.pull.number=${{ github.event.number }}
 
 
