@@ -28,7 +28,7 @@ jobs:
     env:
       BRIDGE_POLARIS_SERVERURL: ${{ vars.POLARIS_URL }}
       BRIDGE_POLARIS_ACCESSTOKEN: ${{ secrets.POLARIS_ACCESS_TOKEN }}
-      BRIDGE_POLARIS_ASSESSMENT_TYPES: SCA,SAST
+      BRIDGE_POLARIS_ASSESSMENT_TYPES: SAST
       BRIDGE_POLARIS_APPLICATION_NAME: ${{ github.event.repository.name }}
       BRIDGE_POLARIS_PROJECT_NAME: ${{ github.event.repository.name }}
       BRIDGE_POLARIS_BRANCH_NAME: ${{ github.event.ref_name }}
@@ -74,7 +74,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: polaris-sarif-results
-          path: ./.bridge/**/*.sarif*
+          path: ".bridge/**/*.sarif*"
 
 
       ### Uncomment below configuration to save logs
