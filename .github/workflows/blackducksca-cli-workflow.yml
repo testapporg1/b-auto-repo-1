@@ -26,7 +26,7 @@ jobs:
       BRIDGE_BLACKDUCKSCA_FIXPR_ENABLED: "true"
       BRIDGE_BLACKDUCKSCA_REPORTS_SARIF_CREATE: "true"
       BRIDGE_BLACKDUCKSCA_REPORTS_SARIF_UPLOAD: "true"
-      BRIDGE_GITHUB_USER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      BRIDGE_GITHUB_USER_TOKEN: ${{ secrets.SR_TOKEN }}
 
       ### SCAN CONFIGURATION: Uncomment below to enable
       # BRIDGE_BLACKDUCKSCA_WAITFORSCAN: true # Wait for scan completion before proceeding
