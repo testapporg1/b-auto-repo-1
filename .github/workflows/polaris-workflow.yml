@@ -70,19 +70,11 @@ jobs:
              polaris.prcomment.enabled=true  \
              polaris.branch.parent.name=${{ github.event.base_ref }}  \
              github.repository.pull.number=${{ github.event.number }}
-      - name: Upload SARIF
-        shell: bash
-        run: |
-          SARIF=$([[ "$RUNNER_OS" == "Windows" ]] \
-            && powershell -Command "Get-ChildItem -Recurse -Path '${{ github.workspace }}\\.bridge' -Filter '*.sarif*' | Select-Object -First 1 -ExpandProperty FullName" \
-            || find "${{ github.workspace }}/.bridge" -type f -name "*.sarif*" -print -quit)
-          [ -f "$SARIF" ] && echo "sarif_file=$SARIF" >> $GITHUB_OUTPUT
-        id: sarif
-      - name: Upload SARIF File
-        if: steps.sarif.outputs.sarif_file != ''
-        uses: github/codeql-action/upload-sarif@v4
+      - name: Upload SARIF Files
+        uses: actions/upload-artifact@v4
         with:
-          sarif_file: ${{ steps.sarif.outputs.sarif_file }}
+          name: polaris-sarif-results
+          path: ./.bridge/**/*.sarif*
 
 
       ### Uncomment below configuration to save logs
