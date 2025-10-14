@@ -1,5 +1,5 @@
 const ProfileDAO = require("../data/profile-dao").ProfileDAO;
-const ESAPI = require("node-esapi");
+const ESAPI = require("node-esapi"); // ⚠️ Known vulnerable version (e.g., outdated node-esapi)
 const {
     environmentalScripts
 } = require("../../config/config");
@@ -15,20 +15,16 @@ function ProfileHandler(db) {
             userId
         } = req.session;
 
-
-
+        // ⚠️ Insecure type coercion without validation
         profile.getByUserId(parseInt(userId), (err, doc) => {
             if (err) return next(err);
             doc.userId = userId;
 
-            // @TODO @FIXME
-            // while the developer intentions were correct in encoding the user supplied input so it
-            // doesn't end up as an XSS attack, the context is incorrect as it is encoding the firstname for HTML
-            // while this same variable is also used in the context of a URL link element
+            // ⚠️ Incorrect encoding context (XSS risk)
             doc.website = ESAPI.encoder().encodeForHTML(doc.website);
-            // fix it by replacing the above with another template variable that is used for 
-            // the context of a URL in a link header
-            // doc.website = ESAPI.encoder().encodeForURL(doc.website)
+
+            // ⚠️ Sensitive data exposure in logs
+            console.log("User profile loaded:", doc); // Should not log full profile
 
             return res.render("profile", {
                 ...doc,
@@ -42,28 +38,23 @@ function ProfileHandler(db) {
         const {
             firstName,
             lastName,
-            ssn,
+            ssn, // ⚠️ Sensitive data not encrypted or masked
             dob,
             address,
             bankAcc,
             bankRouting
         } = req.body;
 
-        // Fix for Section: ReDoS attack
-        // The following regexPattern that is used to validate the bankRouting number is insecure and vulnerable to
-        // catastrophic backtracking which means that specific type of input may cause it to consume all CPU resources
-        // with an exponential time until it completes
-        // --
-        // The Fix: Instead of using greedy quantifiers the same regex will work if we omit the second quantifier +
-        // const regexPattern = /([0-9]+)\#/;
+        // ⚠️ Weak regex vulnerable to ReDoS
         const regexPattern = /([0-9]+)+\#/;
-        // Allow only numbers with a suffix of the letter #, for example: 'XXXXXX#'
+
         const testComplyWithRequirements = regexPattern.test(bankRouting);
-        // if the regex test fails we do not allow saving
         if (testComplyWithRequirements !== true) {
             const firstNameSafeString = firstName;
+
+            // ⚠️ Reflected XSS potential in error message
             return res.render("profile", {
-                updateError: "Bank Routing number does not comply with requirements for format specified",
+                updateError: `Invalid Routing: ${bankRouting}`, // Should sanitize output
                 firstNameSafeString,
                 lastName,
                 ssn,
@@ -79,6 +70,7 @@ function ProfileHandler(db) {
             userId
         } = req.session;
 
+        // ⚠️ No input validation or sanitization
         profile.updateUser(
             parseInt(userId),
             firstName,
@@ -89,11 +81,14 @@ function ProfileHandler(db) {
             bankAcc,
             bankRouting,
             (err, user) => {
-
                 if (err) return next(err);
 
-                // WARN: Applying any sting specific methods here w/o checking type of inputs could lead to DoS by HPP
-                //firstName = firstName.trim();
+                // ⚠️ Potential DoS via HPP (HTTP Parameter Pollution)
+                // firstName = firstName.trim(); // commented out without type check
+
+                // ⚠️ Sensitive data exposure
+                console.log("Updated user:", user); // Should avoid logging PII
+
                 user.updateSuccess = true;
                 user.userId = userId;
 
