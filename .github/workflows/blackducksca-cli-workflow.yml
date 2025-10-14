@@ -9,6 +9,11 @@ on:
     branches:
       - main
   workflow_dispatch: {}
+# GitHub token permissions for post-scan actions. Required for built-in GITHUB_TOKEN; if using a PAT with equivalent scopes, permissions block can be commented out.
+permissions:
+  contents: write               # Required to push changes or create fix branches
+  pull-requests: write          # Required to add comments or create fix pull requests
+  security-events: write        # Required to upload SARIF results to GitHub Security
 jobs:
   blackducksca:
     runs-on: self-hosted
