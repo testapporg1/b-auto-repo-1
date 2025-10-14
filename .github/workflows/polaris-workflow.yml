@@ -1,0 +1,43 @@
+# Quickstart: Black Duck Security Scan Action with polaris:
+#     https://blackduck-dev.zoominsoftware.io/bundle/bridge/page/documentation/t_github-polaris-quickstart.html
+name: Polaris Security Scan
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: {}
+jobs:
+  polaris:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+      - name: Polaris Security Scan
+        id: polaris-scan
+        uses: blackduck-inc/black-duck-security-scan@v2
+        with:
+          polaris_server_url: ${{ vars.POLARIS_URL }}
+          polaris_access_token: ${{ secrets.POLARIS_ACCESS_TOKEN }}
+          polaris_assessment_types: SAST,SCA
+          include_diagnostics: true
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          polaris_prComment_enabled: true
+          polaris_reports_sarif_create: true
+          polaris_upload_sarif_report: true
+
+
+          ### SCAN CONFIGURATION: Uncomment below to enable
+          # polaris_waitForScan: true # Wait for scan completion before proceeding
+
+          ### Mark build status if policy violating issues are found
+          # mark_build_status: failure # Set to success, failure, or skip
+
+      ### Uncomment below configuration to add custom logic based on return status
+      # - name: cmdLine
+      #   id: cmdLine
+      #   run: |
+      #     EXIT_CODE=${{ steps.polaris-scan.outputs.status }}
+      #     echo "Polaris Scan exit status - $EXIT_CODE"
