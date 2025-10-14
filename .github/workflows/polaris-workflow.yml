@@ -60,6 +60,16 @@ jobs:
             unzip -qo bridge.zip -d "$RUNNER_TEMP"
             echo "BRIDGE_CLI_INSTALL_DIR=$(find $RUNNER_TEMP -type f -name bridge-cli | head -n1)" >> "$GITHUB_ENV"
           fi
+      - name: Polaris Full Scan
+        if: ${{ github.event_name != 'pull_request' }}
+        run: ${{ env.BRIDGE_CLI_INSTALL_DIR }} --stage polaris --diagnostics
+      - name: Polaris PR Scan
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |-
+          ${{ env.BRIDGE_CLI_INSTALL_DIR }} --stage polaris  --diagnostics  \
+             polaris.prcomment.enabled=true  \
+             polaris.branch.parent.name=${{ github.event.base_ref }}  \
+             github.repository.pull.number=${{ github.event.number }}
       - name: Upload SARIF
         shell: bash
         run: |
@@ -73,6 +83,7 @@ jobs:
         uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: ${{ steps.sarif.outputs.sarif_file }}
+
 
       ### Uncomment below configuration to save logs
       # - name: Save Logs
