@@ -1,5 +1,5 @@
 # Quickstart: Bridge CLI with polaris:
-#     https://blackduck-dev.zoominsoftware.io/bundle/bridge/page/documentation/t_github-polaris-cli-quickstart.html
+#     https://documentation.blackduck.com/bundle/bridge/page/documentation/t_github-polaris-cli-quickstart.html
 name: Polaris Bridge CLI Scan
 on:
   push:
@@ -28,16 +28,18 @@ jobs:
     env:
       BRIDGE_POLARIS_SERVERURL: ${{ vars.POLARIS_URL }}
       BRIDGE_POLARIS_ACCESSTOKEN: ${{ secrets.POLARIS_ACCESS_TOKEN }}
-      BRIDGE_POLARIS_ASSESSMENT_TYPES: SCA
+      BRIDGE_POLARIS_ASSESSMENT_TYPES: SCA,SAST
       BRIDGE_POLARIS_APPLICATION_NAME: ${{ github.event.repository.name }}
       BRIDGE_POLARIS_PROJECT_NAME: ${{ github.event.repository.name }}
       BRIDGE_POLARIS_BRANCH_NAME: ${{ github.event.ref_name }}
+      BRIDGE_GITHUB_REPOSITORY_OWNER_NAME: ${{ github.repository_owner }}
+      BRIDGE_GITHUB_REPOSITORY_NAME: ${{ github.event.repository.name }}
+      BRIDGE_GITHUB_REPOSITORY_BRANCH_NAME: ${{ github.ref_name }}
       BRIDGE_POLARIS_REPORTS_SARIF_CREATE: "true"
-      BRIDGE_POLARIS_UPLOAD_SARIF_REPORT: "true"
       BRIDGE_GITHUB_USER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      ### SCAN CONFIGURATION: Uncomment below to enable
-      # BRIDGE_POLARIS_WAITFORSCAN: true # Wait for scan completion before proceeding
+      ### SCANNING: Optional fields
+      # BRIDGE_POLARIS_WAIT_FOR_SCAN: true
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
@@ -67,10 +69,11 @@ jobs:
           ${{ env.BRIDGE_CLI_INSTALL_DIR }} --stage polaris  --diagnostics  \
              polaris.prcomment.enabled=true  \
              polaris.branch.parent.name=${{ github.event.base_ref }}  \
-             github.repository.branch.name=${{ github.ref_name }}  \
-             github.repository.name=${{ github.event.repository.name }}  \
-             github.repository.owner.name=${{ github.repository_owner }}  \
              github.repository.pull.number=${{ github.event.number }}
+      - name: Upload SARIF File
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: ${{ runner.temp }}/**/*.sarif*
 
 
       ### Uncomment below configuration to save logs
