@@ -11,44 +11,86 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Print workspace location
-      run: |
-        echo "GITHUB_WORKSPACE: $GITHUB_WORKSPACE"
-        echo "Current directory:"
-        pwd
-
     - name: Simulate SARIF file creation
       run: |
         mkdir -p ".bridge/Dynamic Folder With Spaces"
         echo '{"version": "2.1.0", "runs": []}' > ".bridge/Dynamic Folder With Spaces/report.sarif.json"
-        echo "SARIF file created at:"
-        ls -l ".bridge/Dynamic Folder With Spaces"
 
-    - name: List all SARIF files
+    - name: List SARIF files
+      run: find .bridge -type f -name "*.sarif*" -print
+
+    # ✅ Fallback: Move SARIF file to known location
+    - name: Move SARIF file to known location
       run: |
-        echo "Searching for SARIF files..."
-        find .bridge -type f -name "*.sarif*" -print
+        mkdir -p sarif-out
+        find .bridge -type f -name "*.sarif*" -exec cp {} sarif-out/ \;
+        echo "Contents of sarif-out:"
+        ls -l sarif-out
 
-    - name: Upload SARIF Files
+    # ✅ Upload from known location
+    - name: Upload SARIF Files (fallback)
       uses: actions/upload-artifact@v4
       with:
-        name: polaris-sarif-results
-        path: ".bridge/**/*.sarif.json"
+        name: polaris-sarif-fallback
+        path: sarif-out/*.sarif*
 
-    - name: Upload SARIF Files2
+    # 🔁 Multiple glob pattern attempts
+    - name: Upload SARIF Files 1
       uses: actions/upload-artifact@v4
       with:
-        name: polaris-sarif-results2
+        name: polaris-sarif-1
+        path: ".bridge/**/*.sarif*"
+
+    - name: Upload SARIF Files 2
+      uses: actions/upload-artifact@v4
+      with:
+        name: polaris-sarif-2
+        path: ".bridge/*/*.sarif*"
+
+    - name: Upload SARIF Files 3
+      uses: actions/upload-artifact@v4
+      with:
+        name: polaris-sarif-3
+        path: ".bridge/**/**/*.sarif*"
+
+    - name: Upload SARIF Files 4
+      uses: actions/upload-artifact@v4
+      with:
+        name: polaris-sarif-4
+        path: ".bridge/**/**/**/*.sarif*"
+
+    - name: Upload SARIF Files 5
+      uses: actions/upload-artifact@v4
+      with:
+        name: polaris-sarif-5
+        path: ".bridge/**/*.json"
+
+    - name: Upload SARIF Files 6
+      uses: actions/upload-artifact@v4
+      with:
+        name: polaris-sarif-6
+        path: ".bridge/*/*.json"
+
+    - name: Upload SARIF Files 7
+      uses: actions/upload-artifact@v4
+      with:
+        name: polaris-sarif-7
         path: ".bridge/**/*"
-        
-    - name: Upload SARIF Files3
+
+    - name: Upload SARIF Files 8
       uses: actions/upload-artifact@v4
       with:
-        name: polaris-sarif-results3
+        name: polaris-sarif-8
         path: ".bridge/"
 
-    - name: Upload SARIF Files4
+    - name: Upload SARIF Files 9
       uses: actions/upload-artifact@v4
       with:
-        name: polaris-sarif-results4
-        path: ".bridge/**/*.json"
+        name: polaris-sarif-9
+        path: "**/*.sarif*"
+
+    - name: Upload SARIF Files 10
+      uses: actions/upload-artifact@v4
+      with:
+        name: polaris-sarif-10
+        path: "**/*.json"
