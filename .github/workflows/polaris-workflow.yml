@@ -70,11 +70,14 @@ jobs:
              polaris.prcomment.enabled=true  \
              polaris.branch.parent.name=${{ github.event.base_ref }}  \
              github.repository.pull.number=${{ github.event.number }}
-      - name: Upload SARIF Files
-        uses: actions/upload-artifact@v4
+      - name: Upload SARIF file
+        id: find_sarif
+        shell: bash
+        run: echo "sarif_path=$(find .bridge -type f -name '*.sarif*' | head -n1)" >> $GITHUB_OUTPUT
+      - uses: actions/upload-artifact@v4
         with:
           name: polaris-sarif-results
-          path: "**/*.sarif*"
+          path: ${{ steps.find_sarif.outputs.sarif_path }}
 
 
       ### Uncomment below configuration to save logs
