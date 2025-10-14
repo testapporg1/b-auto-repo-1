@@ -35,4 +35,20 @@ jobs:
         name: polaris-sarif-results
         path: ".bridge/**/*.sarif.json"
 
+    - name: Upload SARIF Files2
+      uses: actions/upload-artifact@v4
+      with:
+        name: polaris-sarif-results2
+        path: ".bridge/**/*"
+        
+    - name: Upload SARIF Files3
+      uses: actions/upload-artifact@v4
+      with:
+        name: polaris-sarif-results3
+        path: ".bridge/"
 
+    - name: Upload SARIF Files4
+      uses: actions/upload-artifact@v4
+      with:
+        name: polaris-sarif-results4
+        path: ".bridge/**/*.json"
