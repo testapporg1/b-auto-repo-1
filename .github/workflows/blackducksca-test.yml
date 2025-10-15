@@ -1,0 +1,69 @@
+# Quickstart: Bridge CLI with blackducksca:
+#     https://blackduck-dev.zoominsoftware.io/bundle/bridge/page/documentation/c_using-bridge-with-black-duck.html
+name: Black Duck Bridge CLI Scan
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+      - stage
+      - release
+  pull_request:
+    branches:
+      - main
+      - master
+      - develop
+      - stage
+      - release
+  workflow_dispatch: {}
+# GitHub token permissions for post-scan actions. Required for built-in GITHUB_TOKEN; if using a PAT with equivalent scopes, permissions block can be commented out.
+permissions:
+  contents: write               # Required to push changes or create fix branches
+  pull-requests: write          # Required to add comments or create fix pull requests
+  security-events: write        # Required to upload SARIF results to GitHub Security
+jobs:
+  blackducksca:
+    runs-on: windows-latest
+    env:
+      BRIDGE_BLACKDUCKSCA_URL: ${{ vars.BLACKDUCKSCA_URL }}
+      BRIDGE_BLACKDUCKSCA_TOKEN: ${{ secrets.BLACKDUCKSCA_TOKEN }}
+      BRIDGE_GITHUB_REPOSITORY_OWNER_NAME: ${{ github.repository_owner }}
+      BRIDGE_GITHUB_REPOSITORY_NAME: ${{ github.event.repository.name }}
+      BRIDGE_GITHUB_REPOSITORY_BRANCH_NAME: ${{ github.ref_name }}
+      BRIDGE_BLACKDUCKSCA_FIXPR_ENABLED: "true"
+      BRIDGE_BLACKDUCKSCA_REPORTS_SARIF_CREATE: "true"
+      BRIDGE_BLACKDUCKSCA_REPORTS_SARIF_UPLOAD: "true"
+      BRIDGE_GITHUB_USER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+      - name: Download & Setup Bridge CLI on Windows
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |
+          $BRIDGE_CLI_DOWNLOAD_URL = "https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/bridge/binaries/bridge-cli-bundle/latest"
+          $zip = Join-Path $env:TEMP "bridge.zip"
+          Invoke-WebRequest "$BRIDGE_CLI_DOWNLOAD_URL/bridge-cli-bundle-win64.zip" -OutFile $zip
+          Expand-Archive $zip -DestinationPath $env:TEMP -Force
+          $exe = Get-ChildItem -Recurse -File $env:TEMP -Filter bridge-cli.exe | Select-Object -First 1
+          "BRIDGE_CLI_INSTALL_DIR=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+      - name: Download & Setup Bridge CLI on macOS/Linux
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          BRIDGE_CLI_DOWNLOAD_URL="https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/bridge/binaries/bridge-cli-bundle/latest"
+          OS=$([[ "$RUNNER_OS" == "macOS" ]] && ([[ $(uname -m) =~ arm ]] && echo macos_arm || echo macosx) || ([[ $(uname -m) =~ arm ]] && echo linux_arm || echo linux64))
+          curl -sSL -o bridge.zip "$BRIDGE_CLI_DOWNLOAD_URL/bridge-cli-bundle-$OS.zip"
+          unzip -qo bridge.zip -d "$RUNNER_TEMP"
+          echo "BRIDGE_CLI_INSTALL_DIR=$(find "$RUNNER_TEMP" -type f -name bridge-cli | head -n1)" >> "$GITHUB_ENV"
+      
+      - name: Blackducksca Full Scan
+        if: ${{ github.event_name != 'pull_request' }}
+        run: ${{ env.BRIDGE_CLI_INSTALL_DIR }} --stage blackducksca --diagnostics
+      - name: Blackducksca PR Scan
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |-
+          ${{ env.BRIDGE_CLI_INSTALL_DIR }} --stage blackducksca  --diagnostics  \
+             blackducksca.automation.prcomment=true  \
+             github.repository.pull.number=${{ github.event.number }}
