@@ -28,7 +28,7 @@ jobs:
     env:
       BRIDGE_POLARIS_SERVERURL: ${{ vars.POLARIS_URL }}
       BRIDGE_POLARIS_ACCESSTOKEN: ${{ secrets.POLARIS_ACCESS_TOKEN }}
-      BRIDGE_POLARIS_ASSESSMENT_TYPES: SAST
+      BRIDGE_POLARIS_ASSESSMENT_TYPES: SAST,SCA
       BRIDGE_POLARIS_APPLICATION_NAME: ${{ github.event.repository.name }}
       BRIDGE_POLARIS_PROJECT_NAME: ${{ github.event.repository.name }}
       BRIDGE_POLARIS_BRANCH_NAME: ${{ github.event.ref_name }}
@@ -70,14 +70,10 @@ jobs:
              polaris.prcomment.enabled=true  \
              polaris.branch.parent.name=${{ github.event.base_ref }}  \
              github.repository.pull.number=${{ github.event.number }}
-      - name: Upload SARIF file
-        id: find_sarif
-        shell: bash
-        run: echo "sarif_path=$(find .bridge -type f -name '*.sarif*' | head -n1)" >> $GITHUB_OUTPUT
-      - uses: actions/upload-artifact@v4
+      - name: Upload SARIF File
+        uses: github/codeql-action/upload-sarif@v4
         with:
-          name: polaris-sarif-results
-          path: ${{ steps.find_sarif.outputs.sarif_path }}
+          sarif_file: ${{ github.workspace }}/.bridge/Polaris SARIF Generator/report.sarif.json
 
 
       ### Uncomment below configuration to save logs
