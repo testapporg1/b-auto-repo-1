@@ -38,16 +38,18 @@ jobs:
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
+        
       - name: Download & Setup Bridge CLI on Windows
         if: runner.os == 'Windows'
         shell: powershell
         run: |
-          $BRIDGE_CLI_DOWNLOAD_URL = "https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/bridge/binaries/bridge-cli-bundle/latest"
-          $zip = Join-Path $env:TEMP "bridge.zip"
-          Invoke-WebRequest "$BRIDGE_CLI_DOWNLOAD_URL/bridge-cli-bundle-win64.zip" -OutFile $zip
-          Expand-Archive $zip -DestinationPath $env:TEMP -Force
-          $exe = Get-ChildItem -Recurse -File $env:TEMP -Filter bridge-cli.exe | Select-Object -First 1
+          $url = "https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/bridge/binaries/bridge-cli-bundle/latest/bridge-cli-bundle-win64.zip"
+          curl.exe -L -o $env:TEMP\bridge.zip $url
+          Expand-Archive $env:TEMP\bridge.zip -DestinationPath $env:TEMP\bridge -Force
+          $exe = Get-ChildItem $env:TEMP\bridge -Recurse -Filter bridge-cli.exe | Select-Object -First 1
           "BRIDGE_CLI_INSTALL_DIR=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+           
       - name: Download & Setup Bridge CLI on macOS/Linux
         if: runner.os != 'Windows'
         shell: bash
