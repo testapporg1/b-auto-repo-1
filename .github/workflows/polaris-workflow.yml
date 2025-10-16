@@ -1,0 +1,74 @@
+# Quickstart: Bridge CLI with polaris:
+#     https://blackduck-dev.zoominsoftware.io/bundle/bridge/page/documentation/t_github-polaris-cli-quickstart.html
+name: Polaris Bridge CLI Scan
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch: {}
+# GitHub token permissions for post-scan actions. Required for built-in GITHUB_TOKEN; if using a PAT with equivalent scopes, permissions block can be commented out.
+permissions:
+  contents: write               # Required to push changes or create fix branches
+  pull-requests: write          # Required to add comments or create fix pull requests
+  security-events: write        # Required to upload SARIF results to GitHub Security
+jobs:
+  polaris:
+    runs-on: self-hosted
+    env:
+      BRIDGE_POLARIS_SERVERURL: ${{ vars.POLARIS_URL }}
+      BRIDGE_POLARIS_ACCESSTOKEN: ${{ secrets.POLARIS_ACCESS_TOKEN }}
+      BRIDGE_POLARIS_ASSESSMENT_TYPES: SAST
+      BRIDGE_POLARIS_APPLICATION_NAME: ${{ github.event.repository.name }}
+      BRIDGE_POLARIS_PROJECT_NAME: ${{ github.event.repository.name }}
+      BRIDGE_POLARIS_BRANCH_NAME: ${{ github.event.ref_name }}
+      BRIDGE_GITHUB_REPOSITORY_OWNER_NAME: ${{ github.repository_owner }}
+      BRIDGE_GITHUB_REPOSITORY_NAME: ${{ github.event.repository.name }}
+      BRIDGE_GITHUB_REPOSITORY_BRANCH_NAME: ${{ github.ref_name }}
+      BRIDGE_POLARIS_REPORTS_SARIF_CREATE: "true"
+      BRIDGE_GITHUB_USER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      ### SCANNING: Optional fields
+      # BRIDGE_POLARIS_WAIT_FOR_SCAN: true
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+      - name: Download & Setup Bridge CLI on Windows
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: |-
+          $url = "https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/bridge/binaries/bridge-cli-bundle/latest/bridge-cli-bundle-win64.zip"
+          curl.exe -L -o $env:TEMP\bridge.zip $url
+          Expand-Archive $env:TEMP\bridge.zip -DestinationPath $env:TEMP\bridge -Force
+          $exe = Get-ChildItem $env:TEMP\bridge -Recurse -Filter bridge-cli.exe | Select-Object -First 1
+          "BRIDGE_CLI_INSTALL_DIR=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
+      - name: Download & Setup Bridge CLI on macOS/Linux
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |-
+          BRIDGE_CLI_DOWNLOAD_URL="https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/bridge/binaries/bridge-cli-bundle/latest"
+          OS=$([[ "$RUNNER_OS" == "macOS" ]] && ([[ $(uname -m) =~ arm ]] && echo macos_arm || echo macosx) || ([[ $(uname -m) =~ arm ]] && echo linux_arm || echo linux64))
+          curl -sSL -o bridge.zip "$BRIDGE_CLI_DOWNLOAD_URL/bridge-cli-bundle-$OS.zip"
+          unzip -qo bridge.zip -d "$RUNNER_TEMP"
+          echo "BRIDGE_CLI_INSTALL_DIR=$(find "$RUNNER_TEMP" -type f -name bridge-cli | head -n1)" >> "$GITHUB_ENV"
+      - name: Polaris Full Scan
+        if: ${{ github.event_name != 'pull_request' }}
+        run: ${{ env.BRIDGE_CLI_INSTALL_DIR }} --stage polaris --diagnostics
+      - name: Polaris PR Scan
+        if: ${{ github.event_name == 'pull_request' }}
+        run: |-
+          ${{ env.BRIDGE_CLI_INSTALL_DIR }} --stage polaris  --diagnostics  \
+             polaris.prcomment.enabled=true  \
+             polaris.branch.parent.name=${{ github.event.base_ref }}  \
+             github.repository.pull.number=${{ github.event.number }}
+
+
+      ### Uncomment below configuration to save logs
+      # - name: Save Logs
+      #   if: always()
+      #   uses: actions/upload-artifact@v4
+      #   with:
+      #     name: bridge-logs
+      #     path: ${{ github.workspace }}/.bridge
