@@ -21,35 +21,32 @@ on:
 permissions:
   contents: write               # Required to push changes or create fix branches
   pull-requests: write          # Required to add comments or create fix pull requests
-  security-events: write        # Required to upload SARIF results to GitHub Security
 jobs:
   blackducksca:
-    runs-on: self-hosted
+    runs-on: windows-latest
     env:
       ### SCANNING: Required fields
       BRIDGE_BLACKDUCKSCA_URL: ${{ vars.BLACKDUCKSCA_URL }}
       BRIDGE_BLACKDUCKSCA_TOKEN: ${{ secrets.BLACKDUCKSCA_TOKEN }}
-      ### ADDITIONAL CONTEXT: GitHub repository information
+      ### GitHub repository information
       BRIDGE_GITHUB_REPOSITORY_OWNER_NAME: ${{ github.repository_owner }}
       BRIDGE_GITHUB_REPOSITORY_NAME: ${{ github.event.repository.name }}
       BRIDGE_GITHUB_REPOSITORY_BRANCH_NAME: ${{ github.ref_name }}
+      ### PULL REQUEST COMMENTS
+      BRIDGE_BLACKDUCKSCA_AUTOMATION_PRCOMMENT: "true"
       ### FIX PULL REQUEST CREATION
       BRIDGE_BLACKDUCKSCA_FIXPR_ENABLED: "true"
       ### SARIF report parameters
       BRIDGE_BLACKDUCKSCA_REPORTS_SARIF_CREATE: "true"
       ### GITHUB TOKEN
       BRIDGE_GITHUB_USER_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      ### GitHub pull request information
+      BRIDGE_GITHUB_REPOSITORY_PULL_NUMBER: ${{ github.event.number || github.event.pull_request.number || 0 }}
       ### TOOLING: Bridge CLI download URL
       BRIDGE_DOWNLOAD_URL: https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/bridge/binaries/bridge-cli-bundle/latest
 
       ### SCANNING: Optional fields
       # BRIDGE_WAIT_FOR_SCAN: true
-
-      ### PULL REQUEST COMMENTS: Uncomment below to enable
-      # BRIDGE_BLACKDUCKSCA_AUTOMATION_PRCOMMENT: false
-
-      ### ADDITIONAL CONTEXT: GitHub pull request information
-      BRIDGE_GITHUB_REPOSITORY_PULL_NUMBER: ${{ github.event.pull_request.number || github.event.number || 0 }} # Required for PR Scan functionality
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
@@ -72,5 +69,5 @@ jobs:
           unzip -qo bridge.zip -d "$RUNNER_TEMP"
           echo "BRIDGE_CLI_INSTALL_DIR=$(find "$RUNNER_TEMP" -type f -name bridge-cli | head -n1)" >> "$GITHUB_ENV"
 
-      - name: Blackducksca Scan
+      - name: Black Duck SCA Scan
         run: ${{ env.BRIDGE_CLI_INSTALL_DIR }} --stage blackducksca --diagnostics
