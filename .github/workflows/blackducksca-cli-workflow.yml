@@ -24,7 +24,7 @@ permissions:
   security-events: write        # Required to upload SARIF results to GitHub Security
 jobs:
   blackducksca:
-    runs-on: windows-latest
+    runs-on: self-hosted
     env:
       ### SCANNING: Required fields
       BRIDGE_BLACKDUCKSCA_URL: ${{ vars.BLACKDUCKSCA_URL }}
