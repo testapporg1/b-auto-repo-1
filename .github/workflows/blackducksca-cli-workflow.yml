@@ -49,7 +49,7 @@ jobs:
       # BRIDGE_BLACKDUCKSCA_AUTOMATION_PRCOMMENT: false
 
       ### ADDITIONAL CONTEXT: GitHub pull request information
-      # BRIDGE_GITHUB_REPOSITORY_PULL_NUMBER: ${{ github.event.number }} # Required for PR Scan functionality
+      BRIDGE_GITHUB_REPOSITORY_PULL_NUMBER: ${{ github.event.pull_request.number || github.event.number || 0 }} # Required for PR Scan functionality
     steps:
       - name: Checkout Source
         uses: actions/checkout@v4
