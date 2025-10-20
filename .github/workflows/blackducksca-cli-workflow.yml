@@ -23,7 +23,7 @@ permissions:
   pull-requests: write          # Required to add comments or create fix pull requests
 jobs:
   blackducksca:
-    runs-on: windows-latest
+    runs-on: self-hosted
     env:
       ### SCANNING: Required fields
       BRIDGE_BLACKDUCKSCA_URL: ${{ vars.BLACKDUCKSCA_URL }}
