@@ -26,10 +26,10 @@ jobs:
     runs-on: windows-latest
     env:
       ### SCANNING: Required fields
-      BRIDGE_POLARIS_SERVERURL: ${{ vars.POLARIS_URL }}
-      BRIDGE_POLARIS_ACCESSTOKEN: ${{ secrets.POLARIS_ACCESS_TOKEN }}
+      BRIDGE_POLARIS_SERVERURL: ${{ secrets.POLARIS_POC_SERVER_URL }}
+      BRIDGE_POLARIS_ACCESSTOKEN: ${{ secrets.POLARIS_POC_ACCESS_TOKEN }}
       ### ASSESSMENT TYPES
-      BRIDGE_POLARIS_ASSESSMENT_TYPES: SAST
+      BRIDGE_POLARIS_ASSESSMENT_TYPES: SAST,SCA
       ### SCANNING: Configuration fields
       BRIDGE_POLARIS_APPLICATION_NAME: ${{ github.event.repository.name }}
       BRIDGE_POLARIS_PROJECT_NAME: ${{ github.event.repository.name }}
@@ -47,7 +47,8 @@ jobs:
       ### GitHub pull request information
       BRIDGE_GITHUB_REPOSITORY_PULL_NUMBER: ${{ github.event.number || github.event.pull_request.number || 0 }}
       ### TOOLING: Bridge CLI download URL
-      BRIDGE_DOWNLOAD_URL: https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/bridge/binaries/bridge-cli-bundle/latest
+      BRIDGE_DOWNLOAD_URL: https://repo.blackduck.com/bds-integrations-release/com/blackduck/integration/bridge/binaries/bridge-cli-bundle/3.8.1/bridge-cli-bundle-3.8.1-linux64.zip
+
 
       ### SCANNING: Optional fields
       # BRIDGE_POLARIS_WAIT_FOR_SCAN: true # Wait for scan to complete
@@ -59,7 +60,7 @@ jobs:
         if: runner.os == 'Windows'
         shell: powershell
         run: |-
-          curl.exe -L -o $env:TEMP\bridge.zip "$env:BRIDGE_DOWNLOAD_URL/bridge-cli-bundle-win64.zip"
+          curl.exe -L -o $env:TEMP\bridge.zip "$env:BRIDGE_DOWNLOAD_URL"
           Expand-Archive $env:TEMP\bridge.zip -DestinationPath $env:TEMP\bridge -Force
           $exe = Get-ChildItem $env:TEMP\bridge -Recurse -Filter bridge-cli.exe | Select-Object -First 1
           "BRIDGE_CLI_INSTALL_DIR=$($exe.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append
@@ -69,9 +70,10 @@ jobs:
         shell: bash
         run: |-
           OS=$([[ "$RUNNER_OS" == "macOS" ]] && ([[ $(uname -m) =~ arm ]] && echo macos_arm || echo macosx) || ([[ $(uname -m) =~ arm ]] && echo linux_arm || echo linux64))
-          curl -sSL -o bridge.zip "$BRIDGE_DOWNLOAD_URL/bridge-cli-bundle-$OS.zip"
+          curl -sSL -o bridge.zip "$BRIDGE_DOWNLOAD_URL"
           unzip -qo bridge.zip -d "$RUNNER_TEMP"
           echo "BRIDGE_CLI_INSTALL_DIR=$(find "$RUNNER_TEMP" -type f -name bridge-cli | head -n1)" >> "$GITHUB_ENV"
 
       - name: Polaris Scan
         run: ${{ env.BRIDGE_CLI_INSTALL_DIR }} --stage polaris --diagnostics
+ 
